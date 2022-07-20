@@ -34,6 +34,9 @@ workflow{
   //filters concatenated fastq
   filtLong(trim.out.poreOut)
 
+  //assembly
+  epi2meAssembly(filtLong.out.filtered)
+
 }
 
 process concatenate{
@@ -106,5 +109,23 @@ process filtLong{
   script:
   """
   filtlong --keep_percent 95 ${reads} | gzip > ${params.sample}_filtered.fastq.gz
+  """
+}
+
+process epi2meAssembly{
+  tag{"Epi2Me bacterial genome assembly ${params.in}"}
+  label 'process_low'
+
+  publishDir("${params.out}", mode: 'copy')
+
+  input:
+  path(reads)
+
+  output:
+  path("*")
+
+  script:
+  """
+  nextflow run epi2me-labs/wf-bacterial-genomes --fastq ${reads} --out_dir epi2meAssembly --sample ${params.sample}
   """
 }
