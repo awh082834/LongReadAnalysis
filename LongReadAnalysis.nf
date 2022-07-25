@@ -8,6 +8,7 @@ nextflow.enable.dsl=2
 //input params
 params.out
 params.in
+//params.ref
 params.sample
 
 println """\
@@ -37,6 +38,8 @@ workflow{
   //assembly
   epi2meAssembly(filtLong.out.filtered)
 
+  //AssemblyQC
+  AssemblyQC(epi2meAssembly.out.assembly)
 }
 
 process concatenate{
@@ -122,10 +125,29 @@ process epi2meAssembly{
   path(reads)
 
   output:
-  path("*")
+  path("epi2meAssembly/${params.sample}.medaka.fasta.gz"), emit: assembly
+  path("epi2meAssembly/*.html")
 
   script:
   """
   nextflow run epi2me-labs/wf-bacterial-genomes --fastq ${reads} --out_dir epi2meAssembly --sample ${params.sample}
+  """
+}
+
+process AssemblyQC{
+  tag{"QUAST ${params.in}"}
+  label 'process_low'
+
+  publishDir("${params.out}", mode: 'copy')
+
+  input:
+  path(assembly)
+
+  output:
+  path("quastOut/*")
+
+  script:
+  """
+  quast.py -o quastOut ${assembly}
   """
 }
